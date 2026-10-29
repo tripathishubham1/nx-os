@@ -41,7 +41,10 @@ struct OSView: View {
 
     /// The library, with games NX OS is building or rebuilding shown as building, with live progress.
     private var allGames: [Game] {
-        library.games.map { g in builds.live[g.folder.lastPathComponent].map { g.rebuilding($0) } ?? g }
+        library.games.map { g in
+            let f = g.folder.lastPathComponent
+            return builds.activeIPhone && builds.active == f ? g : builds.live[f].map { g.rebuilding($0) } ?? g
+        }
     }
     private var games: [Game] {
         guard !query.isEmpty else { return allGames }

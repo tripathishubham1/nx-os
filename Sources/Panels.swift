@@ -148,12 +148,18 @@ struct BuildsPage: View {
 
     private var building: [Game] { games.filter { $0.state == .building } }
     private var ready: [Game] { games.filter { $0.state == .ready } }
+    /// The running iPhone build, shown as a row while its game stays in Built.
+    private var iphoneBuild: Game? {
+        guard builds.activeIPhone, let f = builds.active, let st = builds.live[f],
+              let g = games.first(where: { $0.folder.lastPathComponent == f }) else { return nil }
+        return g.rebuilding(st)
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 22) {
                 PageHeader(icon: "hammer.fill", title: "Builds",
-                           subtitle: "\(ready.count) built · \(building.count + builds.queue.count) in progress · \(SystemInfo.t7Free) on \(SystemInfo.driveName)") {
+                           subtitle: "\(ready.count) built · \(building.count + builds.queue.count + (iphoneBuild == nil ? 0 : 1)) in progress · \(SystemInfo.t7Free) on \(SystemInfo.driveName)") {
                     HStack(spacing: 10) {
                         PillButton(title: "Games folder", icon: "folder") { NSWorkspace.shared.open(gamesRoot) }
                         CTAButton(title: "Install game", icon: "plus") { pick() }
@@ -174,13 +180,14 @@ struct BuildsPage: View {
                     }
                     .padding(14).raised(16)
                 }
-                if !building.isEmpty {
+                if !building.isEmpty || iphoneBuild != nil {
                     SectionTitle(title: "In progress")
                     ForEach(building) { g in BuildRow(game: g, builds: builds, actions: actions) }
+                    if let g = iphoneBuild { BuildRow(game: g, builds: builds, actions: actions, iphone: true) }
                 }
                 if !builds.queue.isEmpty {
                     SectionTitle(title: "Up next", subtitle: "Builds run one at a time")
-                    ForEach(builds.queue, id: \.self) { name in queuedRow(name) }
+                    ForEach(builds.queue, id: \.self) { name in queuedRow(name, iphone: builds.iphoneQueue.contains(name)) }
                 }
                 dropZone
                 if !ready.isEmpty {
@@ -241,10 +248,24 @@ struct BuildsPage: View {
         builds.install(urls, known: catalog.games) { problem = $0 }
     }
 
-    private func queuedRow(_ name: String) -> some View {
+    /// Optional, never automatic: builds the iPhone app on request, then sends it by AirDrop.
+    @ViewBuilder private func iphoneButton(_ g: Game) -> some View {
+        let f = g.folder.lastPathComponent
+        if builds.active == f && builds.activeIPhone || builds.iphoneQueue.contains(f) {
+            IconButton(icon: "iphone.badge.play", help: "Building for iPhone") {}.opacity(0.4).disabled(true)
+        } else if let ipa = BuildQueue.ipa(for: f) {
+            IconButton(icon: "iphone.and.arrow.forward", help: "Send to iPhone by AirDrop, then open it with AltStore or SideStore") {
+                BuildQueue.sendToIPhone(ipa)
+            }
+        } else {
+            IconButton(icon: "iphone", help: "Build for iPhone (optional; 30 to 60 minutes)") { builds.buildForIPhone(f) }
+        }
+    }
+
+    private func queuedRow(_ name: String, iphone: Bool = false) -> some View {
         HStack(spacing: 14) {
-            IconTile(icon: "clock.fill", tint: Theme.ink2)
-            Text(name).font(.ui(15, .bold)).foregroundStyle(.white)
+            IconTile(icon: iphone ? "iphone" : "clock.fill", tint: Theme.ink2)
+            Text(iphone ? "\(name) for iPhone" : name).font(.ui(15, .bold)).foregroundStyle(.white)
             Spacer()
             PillButton(title: "Remove", icon: "xmark") { builds.cancelQueued(name) }
         }
@@ -282,6 +303,7 @@ struct BuildsPage: View {
                     }
                 }
                 Spacer(minLength: 6)
+                iphoneButton(g)
                 IconButton(icon: "arrow.clockwise", help: "Rebuild (after adding an update)") { builds.rebuild(g.folder.lastPathComponent) }
             }
             .padding(.horizontal, 14).padding(.top, 28).padding(.bottom, 14)
@@ -291,6 +313,13 @@ struct BuildsPage: View {
         .raised(18)
         .contextMenu {
             Button("Rebuild") { builds.rebuild(g.folder.lastPathComponent) }
+            if let ipa = BuildQueue.ipa(for: g.folder.lastPathComponent) {
+                Button("Send to iPhone (AirDrop)") { BuildQueue.sendToIPhone(ipa) }
+                Button("Show iPhone App in Finder") { NSWorkspace.shared.activateFileViewerSelecting([ipa]) }
+                Button("Rebuild for iPhone") { builds.buildForIPhone(g.folder.lastPathComponent) }
+            } else {
+                Button("Build for iPhone") { builds.buildForIPhone(g.folder.lastPathComponent) }
+            }
             Button("Show in Finder") { actions.reveal(g) }
             Button("Open Log") { actions.log(g) }
             Divider()
@@ -305,6 +334,7 @@ struct BuildRow: View {
     let game: Game
     @ObservedObject var builds: BuildQueue
     let actions: Actions
+    var iphone = false
 
     var body: some View {
         let b = game.build
@@ -326,7 +356,7 @@ struct BuildRow: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
                         Text(game.name).font(.ui(17, .bold)).foregroundStyle(.white).lineLimit(1)
-                        Text(game.app == nil ? "BUILDING" : "REBUILDING").font(.ui(11, .heavy)).tracking(1)
+                        Text(iphone ? "FOR IPHONE" : game.app == nil ? "BUILDING" : "REBUILDING").font(.ui(11, .heavy)).tracking(1)
                             .foregroundStyle(Color(white: 0.06)).padding(.horizontal, 8).padding(.vertical, 3).background(Capsule().fill(.orange))
                     }
                     if let b, b.n > 0 {

@@ -94,6 +94,10 @@ enum Catalog {
 final class BuildQueue: ObservableObject {
     @Published var queue: [String] = []
     @Published var active: String? { didSet { Self.busy = active } }
+    /// Queued folders whose next build is the iPhone app (an IPA) rather than the Mac app.
+    @Published var iphoneQueue: Set<String> = []
+    /// The running build is an iPhone one: the Mac app stays playable meanwhile.
+    @Published var activeIPhone = false
     /// The folder being built, for the quit check (the build reads its progress through NX OS).
     static var busy: String?
     @Published var message: String?
@@ -213,13 +217,31 @@ final class BuildQueue: ObservableObject {
         }
     }
 
+    /// Builds the unsigned iPhone app, <folder>/<folder>.ipa, for AltStore or SideStore to sign.
+    func buildForIPhone(_ folder: String) {
+        guard !queue.contains(folder), active != folder else { return }
+        iphoneQueue.insert(folder)
+        queue.append(folder)
+        startNext()
+    }
+
+    static func ipa(for folder: String) -> URL? {
+        let url = gamesRoot.appendingPathComponent(folder).appendingPathComponent("\(folder).ipa")
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    /// Hands the IPA to AirDrop; on the iPhone, open it with AltStore or SideStore to install it.
+    static func sendToIPhone(_ ipa: URL) {
+        NSSharingService(named: .sendViaAirDrop)?.perform(withItems: [ipa])
+    }
+
     func rebuild(_ folder: String) {
         guard !queue.contains(folder), active != folder else { return }
         queue.append(folder)
         startNext()
     }
 
-    func cancelQueued(_ folder: String) { queue.removeAll { $0 == folder } }
+    func cancelQueued(_ folder: String) { queue.removeAll { $0 == folder }; iphoneQueue.remove(folder) }
 
     /// Stops the running build. Its folder keeps what was done, so the next build picks up from there.
     func stop(_ folder: String) {
@@ -248,6 +270,8 @@ final class BuildQueue: ObservableObject {
         guard let keys = keysPath else { message = "No prod.keys found: put yours in ~/.switch/prod.keys"; return }
         if externalBuildRunning() { return }
         queue.removeFirst()
+        let iphone = iphoneQueue.remove(next) != nil
+        activeIPhone = iphone
         active = next
         live[next] = BuildStatus(stage: "Starting", step: "", k: 1, n: 8)
         let home = FileManager.default.homeDirectoryForCurrentUser.path
@@ -262,14 +286,16 @@ final class BuildQueue: ObservableObject {
         _ = try? log?.seekToEnd()
         func write(_ line: String) { log?.write(Data((line + "\n").utf8)) }
         write("===== building \(next) =====")
+        if iphone { write("(the iPhone app: \(next).ipa)") }
 
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/caffeinate")
         p.currentDirectoryURL = nxnativeRoot
         p.environment = e
         p.arguments = ["-i", nxnativeRoot.appendingPathComponent(".venv/bin/python").path, "scripts/build_ipa_from_nsp.py",
-                       gamesRoot.appendingPathComponent(next).path, "-k", keys, "--platform", "mac-app", "--allow-other-metal",
-                       "--progress", "json"]
+                       gamesRoot.appendingPathComponent(next).path, "-k", keys, "--allow-other-metal", "--progress", "json"]
+            + (iphone ? ["--platform", "ios", "-o", gamesRoot.appendingPathComponent(next).appendingPathComponent("\(next).ipa").path]
+                      : ["--platform", "mac-app"])
         let out = Pipe(), err = Pipe()
         p.standardOutput = out; p.standardError = err
         var buffer = Data()
@@ -301,11 +327,12 @@ final class BuildQueue: ObservableObject {
             DispatchQueue.main.async {
                 guard let self else { return }
                 if self.stopping { self.message = nil }
-                else if proc.terminationStatus != 0 { self.message = "The build of \(next) stopped with an error: see its log in the Builds page" }
+                else if proc.terminationStatus != 0 { self.message = "The \(iphone ? "iPhone " : "")build of \(next) stopped with an error: see its log in the Builds page" }
+                else if iphone { self.message = "\(next) is ready for your iPhone: use Send to iPhone, then open it with AltStore or SideStore" }
                 else if UserDefaults.standard.object(forKey: "cleanUpAfterBuild") as? Bool ?? true { Self.cleanUp(next) }
                 self.stopping = false
                 self.live[next] = nil
-                self.active = nil; self.proc = nil
+                self.active = nil; self.proc = nil; self.activeIPhone = false
                 self.startNext()
             }
         }

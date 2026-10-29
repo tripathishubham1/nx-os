@@ -260,7 +260,8 @@ final class Library: ObservableObject {
                                                    options: [.skipsHiddenFiles])) ?? []
         // builds running right now (this NX OS or another), by game folder: a rebuild keeps its old app
         let running = Set(shell("/bin/ps", ["-axo", "command"]).split(separator: "\n").compactMap { line -> String? in
-            guard let r = line.range(of: "build_ipa_from_nsp.py ") else { return nil }
+            // an iPhone build leaves the Mac app playable
+            guard let r = line.range(of: "build_ipa_from_nsp.py "), !line.contains("--platform ios") else { return nil }
             let rest = line[r.upperBound...]
             let path = rest.range(of: " -")
                 .map { String(rest[..<$0.lowerBound]) } ?? String(rest)

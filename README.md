@@ -12,6 +12,7 @@ NX OS finds every game nxnative has built, launches it full screen, tracks play 
 - **Store**: every game nxnative supports (109 and counting), with filters, sorting, details, compatibility notes and in-app trailers. Installing always uses your own dump; NX OS never downloads games.
 - **Library and Games**: your built games as cards or a grid, with Play, Rebuild, Show in Finder, Open Log and Delete Game.
 - **Builds**: drop an NSP, XCI, NSZ or XCZ (plus its update) and NX OS works out which game it is, even from an untagged file name, and builds it with nxnative, showing each stage in real time. Builds can be stopped, keep the Mac awake, and clean up their temporary files when they finish.
+- **iPhone (optional)**: Build for iPhone makes the game's iPhone app on request, never automatically. Send to iPhone passes it by AirDrop; open it with AltStore or SideStore, which sign it and keep it refreshed. nxnative's iPhone apps come with touch controls (2D and 3D layouts, swipe for the camera), and a connected controller replaces them.
 - **Stats**: total play time, a 14-day chart, time by game and a genre radar.
 - **System**: storage, nxnative status, keys, sound, controller and power options.
 - **Crash detection**: a game that quits within a minute is flagged with a hint, for example "Needs update 1.9.0", and does not count as played.
