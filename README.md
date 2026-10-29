@@ -11,7 +11,7 @@ NX OS finds every game nxnative has built, launches it full screen, tracks play 
 - **Home**: continue where you left off, popular games with character art, what is new in nxnative, and a side panel with play time, storage and your taste in genres.
 - **Store**: every game nxnative supports (109 and counting), with filters, sorting, details, compatibility notes and in-app trailers. Installing always uses your own dump; NX OS never downloads games.
 - **Library and Games**: your built games as cards or a grid, with Play, Rebuild, Show in Finder, Open Log and Delete Game.
-- **Builds**: drop an NSP, XCI, NSZ or XCZ (plus its update) and NX OS builds it with nxnative, showing each stage in real time. Builds can be stopped, keep the Mac awake, and clean up their temporary files when they finish.
+- **Builds**: drop an NSP, XCI, NSZ or XCZ (plus its update) and NX OS works out which game it is, even from an untagged file name, and builds it with nxnative, showing each stage in real time. Builds can be stopped, keep the Mac awake, and clean up their temporary files when they finish.
 - **Stats**: total play time, a 14-day chart, time by game and a genre radar.
 - **System**: storage, nxnative status, keys, sound, controller and power options.
 - **Crash detection**: a game that quits within a minute is flagged with a hint, for example "Needs update 1.9.0", and does not count as played.
@@ -65,6 +65,7 @@ Sources/
   Home.swift      home page and side panel
   Store.swift     store catalog, pages and trailers
   Setup.swift     first-run folder setup
+  XCI.swift       reads the title ID inside a game card dump
   Pages.swift     shared components and the library
   Panels.swift    games, builds, stats and system pages
 Resources/        icon, font, avatars, character art, controller art

@@ -238,7 +238,7 @@ struct BuildsPage: View {
     private func install(_ urls: [URL]) {
         guard !urls.isEmpty else { return }
         problem = nil
-        builds.install(urls) { problem = $0 }
+        builds.install(urls, known: catalog.games) { problem = $0 }
     }
 
     private func queuedRow(_ name: String) -> some View {

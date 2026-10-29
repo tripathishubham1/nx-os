@@ -150,12 +150,29 @@ final class BuildQueue: ObservableObject {
         install(zip(files, tagged).map { $0 }, folderName: Self.cleanName(name), done: done)
     }
 
-    func install(_ files: [URL], done: @escaping (String?) -> Void) {
-        install(files.map { ($0, $0) }, folderName: nil, done: done)
+    /// Drops and picks. A card dump (XCI / XCZ) without "[0100…]" in its name is identified from
+    /// inside (XCI.titleID) or, without keys, by a Store title its name matches, and gets the ID
+    /// added to its name, which nxnative needs. `known` is the Store's list, for folder names.
+    func install(_ files: [URL], known: [StoreGame] = [], done: @escaping (String?) -> Void) {
+        install(files.map { ($0, $0) }, folderName: nil, known: known.map { ($0.id, $0.name) }, done: done)
     }
 
-    /// `files` pairs each source with the name it should have on the T7.
-    private func install(_ files: [(URL, URL)], folderName: String?, done: @escaping (String?) -> Void) {
+    /// The title ID of an untagged card dump, and its Store name when there is one.
+    private static func identify(_ f: URL, known: [(id: String, name: String)]) -> (id: String, name: String?)? {
+        if let id = XCI.titleID(f, keys: findKeys()) {
+            return (id, known.first { $0.id == id }?.name)
+        }
+        func plain(_ s: String) -> String {
+            s.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil).filter { $0.isLetter || $0.isNumber }
+        }
+        let name = plain(cleanName(f.deletingPathExtension().lastPathComponent))
+        guard name.count >= 4 else { return nil }
+        return known.first { plain($0.name) == name }.map { ($0.id, $0.name) }
+    }
+
+    /// `files` pairs each source with the name it should have in the games folder.
+    private func install(_ files: [(URL, URL)], folderName: String?, known: [(id: String, name: String)] = [],
+                         done: @escaping (String?) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
             let fm = FileManager.default
             var dirs: [String] = []
@@ -163,12 +180,21 @@ final class BuildQueue: ObservableObject {
             for (f, named) in files {
                 let ext = f.pathExtension.lowercased()
                 guard ["nsp", "xci", "nsz", "xcz"].contains(ext) else { problems.append("\(f.lastPathComponent) is not a game file"); continue }
-                let tid = Self.titleID(in: named.lastPathComponent)
+                var named = named, title: String?
+                var tid = Self.titleID(in: named.lastPathComponent)
                 if ["xci", "xcz"].contains(ext), tid == nil {
-                    problems.append("\(f.lastPathComponent): add the title ID to its name, like “Game [0100…]”.xci")
-                    continue
+                    guard let found = Self.identify(f, known: known) else {
+                        problems.append(Self.findKeys() == nil
+                            ? "\(f.lastPathComponent): add your prod.keys to ~/.switch so NX OS can tell which game this is"
+                            : "\(f.lastPathComponent): NX OS could not read which game this is. Is it a complete dump?")
+                        continue
+                    }
+                    tid = found.id; title = found.name
+                    named = named.deletingLastPathComponent()
+                        .appendingPathComponent("\(named.deletingPathExtension().lastPathComponent) [\(found.id)].\(named.pathExtension)")
                 }
-                let name = tid.flatMap(Self.folder(forTitle:)) ?? folderName ?? Self.cleanName(f.deletingPathExtension().lastPathComponent)
+                let name = tid.flatMap(Self.folder(forTitle:)) ?? folderName ?? title.map(Self.cleanName)
+                    ?? Self.cleanName(f.deletingPathExtension().lastPathComponent)
                 let dir = gamesRoot.appendingPathComponent(name)
                 do {
                     try fm.createDirectory(at: dir, withIntermediateDirectories: true)
