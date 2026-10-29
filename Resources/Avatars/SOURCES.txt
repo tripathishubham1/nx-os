@@ -1,0 +1,4 @@
+Profile avatars from DiceBear (https://www.dicebear.com), API v9, 256 px PNG.
+Styles and licences: adventurer (Lisa Wischofsky, CC BY 4.0), lorelei (Lisa Wischofsky, CC0 1.0),
+bottts (Pablo Stanley, free for personal and commercial use),
+pixel-art (DiceBear, CC0 1.0). See https://www.dicebear.com/licenses/

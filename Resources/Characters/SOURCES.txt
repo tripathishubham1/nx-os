@@ -1,0 +1,5 @@
+Character art for the Home "Popular games" cards, named by title ID. Official artwork, for personal use in this launcher.
+01007EF00011E000.png  Link (Breath of the Wild)   https://zeldawiki.wiki/wiki/File:BotW_Link_Shooting_Artwork_2.png
+0100F43008C44000.png  Zygarde, Complete Forme     PokeAPI official-artwork 10120
+01008DB008C2C000.png  Zamazenta                   PokeAPI official-artwork 889
+Add more as <TITLEID>.png here or in /Volumes/T7/Games/_art/.

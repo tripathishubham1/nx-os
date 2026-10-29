@@ -1,0 +1,5 @@
+build/
+.DS_Store
+._*
+*.swp
+Resources/Characters/*.png
