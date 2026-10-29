@@ -4,7 +4,7 @@ A console-style launcher for macOS that runs Nintendo Switch games natively on A
 
 NX OS finds every game nxnative has built, launches it full screen, tracks play time, and turns your own game dumps into Mac apps with live build progress. It is driven by mouse, keyboard or a game controller.
 
-![Home](docs/screenshots/home.png)
+![A tour of NX OS](docs/tour.gif)
 
 ## Features
 
@@ -17,9 +17,11 @@ NX OS finds every game nxnative has built, launches it full screen, tracks play 
 - **Crash detection**: a game that quits within a minute is flagged with a hint, for example "Needs update 1.9.0", and does not count as played.
 - Profile avatars, controller and keyboard navigation (A, B, Y, L/R, digits 1 to 7), Reduce Motion support and an app-only window.
 
-| Store | Game details |
+| Home | Store |
 |---|---|
-| ![Store](docs/screenshots/store.png) | ![Store detail](docs/screenshots/store-detail.png) |
+| ![Home](docs/screenshots/home.png) | ![Store](docs/screenshots/store.png) |
+| **Game details** | **Setup** |
+| ![Store detail](docs/screenshots/store-detail.png) | ![Setup](docs/screenshots/setup.png) |
 | **Library** | **Games** |
 | ![Library](docs/screenshots/library.png) | ![Games](docs/screenshots/games.png) |
 | **Builds** | **Stats** |
