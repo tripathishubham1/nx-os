@@ -36,6 +36,15 @@ NX OS finds every game nxnative has built, launches it full screen, tracks play 
 - A checkout of nxnative with its Python environment set up
 - Your own `prod.keys`, and dumps of games you own
 
+## Install
+
+1. Download `NX-OS-2.0-macOS-arm64.zip` from [Releases](https://github.com/tripathishubham1/nx-os/releases/latest) and unzip it.
+2. Move **NX OS** to Applications.
+3. The app is not notarized, so the first time, right-click it and choose **Open**, then **Open** again. (Or run `xattr -dr com.apple.quarantine "/Applications/NX OS.app"`.)
+4. Pick your games folder and nxnative checkout on the setup screen.
+
+Or build it yourself, below.
+
 ## Build
 
 ```sh
