@@ -153,7 +153,7 @@ struct BuildsPage: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 22) {
                 PageHeader(icon: "hammer.fill", title: "Builds",
-                           subtitle: "\(ready.count) built · \(building.count + builds.queue.count) in progress · \(SystemInfo.t7Free) on T7") {
+                           subtitle: "\(ready.count) built · \(building.count + builds.queue.count) in progress · \(SystemInfo.t7Free) on \(SystemInfo.driveName)") {
                     HStack(spacing: 10) {
                         PillButton(title: "Games folder", icon: "folder") { NSWorkspace.shared.open(gamesRoot) }
                         CTAButton(title: "Install game", icon: "plus") { pick() }
@@ -524,6 +524,7 @@ struct StatsPage: View {
 struct SystemPage: View {
     @ObservedObject var builds: BuildQueue
     @Binding var muted: Bool
+    var folders: () -> Void = {}
     @AppStorage("fullscreenOnStart") private var fullscreenOnStart = false
     @AppStorage("skipWindowDefault") private var skipWindowDefault = true
     @AppStorage("introOnStart") private var introOnStart = true
@@ -552,7 +553,12 @@ struct SystemPage: View {
                             toggle("trash.fill", "Delete build files after a build", $cleanUpAfterBuild,
                                    note: "Saves tens of GB per game. Your dumps are kept, but a rebuild starts from scratch.")
                             divider
-                            row("folder.fill", "Games folder") { PillButton(title: "Open", icon: "arrow.up.right") { NSWorkspace.shared.open(gamesRoot) } }
+                            row("folder.fill", "Games folder") {
+                                HStack(spacing: 8) {
+                                    PillButton(title: "Open", icon: "arrow.up.right") { NSWorkspace.shared.open(gamesRoot) }
+                                    PillButton(title: "Change…", icon: "folder") { folders() }
+                                }
+                            }
                             divider
                             row("key.fill", "Keys") {
                                 Text(builds.keysPath.map { ($0 as NSString).abbreviatingWithTildeInPath } ?? "Not found")
@@ -576,7 +582,12 @@ struct SystemPage: View {
                                     .lineLimit(6).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 8)
                             }
                             divider
-                            row("chevron.left.forwardslash.chevron.right", "Source") { PillButton(title: "Open", icon: "arrow.up.right") { NSWorkspace.shared.open(nxnativeRoot) } }
+                            row("chevron.left.forwardslash.chevron.right", "Source") {
+                                HStack(spacing: 8) {
+                                    PillButton(title: "Open", icon: "arrow.up.right") { NSWorkspace.shared.open(nxnativeRoot) }
+                                    PillButton(title: "Change…", icon: "folder") { folders() }
+                                }
+                            }
                         }
                         group("Power") {
                             row("power", "Quit NX OS", tint: .red) { PillButton(title: "Quit", icon: "power", prominent: true, tint: Color(red: 1, green: 0.42, blue: 0.42)) { NSApp.terminate(nil) } }
@@ -593,7 +604,7 @@ struct SystemPage: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 IconTile(icon: "externaldrive.fill", tint: Color(red: 0.42, green: 0.48, blue: 0.95))
-                Text("T7 storage").font(.ui(15, .bold)).foregroundStyle(.white)
+                Text("\(SystemInfo.driveName) storage").font(.ui(15, .bold)).foregroundStyle(.white)
                 Spacer()
                 Text("\(Int(used * 100))% used").font(.ui(12, .semibold)).foregroundStyle(Theme.ink2)
             }

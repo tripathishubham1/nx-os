@@ -3,7 +3,7 @@
 import SwiftUI
 import AppKit
 
-let nxnativeRoot = URL(fileURLWithPath: "/Volumes/T7/Projects/Apps/nxnative")
+var nxnativeRoot: URL { Paths.url(Paths.nxnativeKey, "~/nxnative") }
 
 // MARK: - Catalog
 
@@ -89,7 +89,7 @@ enum Catalog {
 // MARK: - Build queue
 
 /// Installs NSP / XCI files into their own game folders and builds them one at a time with
-/// nxnative's NSP script. Each build writes /Volumes/T7/Games/nxnative-<folder>.log, framed by
+/// nxnative's NSP script. Each build writes <games folder>/nxnative-<folder>.log, framed by
 /// "===== building <folder> =====" and "EXIT <folder>: <code>", which the library reads for progress.
 final class BuildQueue: ObservableObject {
     @Published var queue: [String] = []
@@ -106,7 +106,9 @@ final class BuildQueue: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in self?.startNext() }
     }
 
-    var keysPath: String? {
+    var keysPath: String? { Self.findKeys() }
+
+    static func findKeys() -> String? {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return ["\(home)/.switch/prod.keys", "\(home)/Library/Application Support/Ryujinx/system/prod.keys"]
             .first { FileManager.default.fileExists(atPath: $0) }
@@ -171,7 +173,7 @@ final class BuildQueue: ObservableObject {
                 do {
                     try fm.createDirectory(at: dir, withIntermediateDirectories: true)
                     let dest = dir.appendingPathComponent(named.lastPathComponent)
-                    if f.path.hasPrefix("/Volumes/T7/") { try fm.moveItem(at: f, to: dest) } else { try fm.copyItem(at: f, to: dest) }
+                    if SystemInfo.sameVolume(f, gamesRoot) { try fm.moveItem(at: f, to: dest) } else { try fm.copyItem(at: f, to: dest) }
                     if !dirs.contains(name) { dirs.append(name) }
                 } catch {
                     problems.append("\(f.lastPathComponent): \(error.localizedDescription)")
@@ -387,14 +389,24 @@ enum SystemInfo {
     static var firstName: String {
         NSFullUserName().split(separator: " ").first.map(String.init) ?? NSUserName()
     }
-    /// How full the T7 is, 0…1.
+    /// The name of the drive holding the games folder, like "T7" or "Macintosh HD".
+    static var driveName: String {
+        (try? gamesRoot.resourceValues(forKeys: [.volumeLocalizedNameKey]))?.volumeLocalizedName ?? "this Mac"
+    }
+    static func sameVolume(_ a: URL, _ b: URL) -> Bool {
+        let k: Set<URLResourceKey> = [.volumeIdentifierKey]
+        guard let x = (try? a.resourceValues(forKeys: k))?.volumeIdentifier as? NSObject,
+              let y = (try? b.resourceValues(forKeys: k))?.volumeIdentifier as? NSObject else { return false }
+        return x.isEqual(y)
+    }
+    /// How full the games drive is, 0…1.
     static var t7UsedFraction: Double {
-        guard let v = try? URL(fileURLWithPath: "/Volumes/T7").resourceValues(forKeys: [.volumeAvailableCapacityKey, .volumeTotalCapacityKey]),
+        guard let v = try? gamesRoot.resourceValues(forKeys: [.volumeAvailableCapacityKey, .volumeTotalCapacityKey]),
               let free = v.volumeAvailableCapacity, let total = v.volumeTotalCapacity, total > 0 else { return 0 }
         return 1 - Double(free) / Double(total)
     }
     static var t7Free: String {
-        guard let v = try? URL(fileURLWithPath: "/Volumes/T7").resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey]),
+        guard let v = try? gamesRoot.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey]),
               let free = v.volumeAvailableCapacity else { return "–" }
         return ByteCountFormatter.string(fromByteCount: Int64(free), countStyle: .file) + " free"
     }

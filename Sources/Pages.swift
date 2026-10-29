@@ -14,6 +14,7 @@ struct Actions {
     var store: (StoreGame) -> Void = { _ in }   // a game's page in the Store
     var search: () -> Void = {}
     var delete: (Game) -> Void = { _ in }
+    var folders: () -> Void = {}                // the setup screen, to change folders
 }
 
 enum Page: Int, CaseIterable, Identifiable {

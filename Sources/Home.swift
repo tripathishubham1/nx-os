@@ -2,7 +2,7 @@
 // characters pop out of their tiles, a row of small Store tiles, a tabbed shelf, and a side panel
 // with the player, search, stat tiles, a genre radar and Store news.
 // Character art is a transparent PNG per title ID, from Resources/Characters in the app or
-// /Volumes/T7/Games/_art; games without one show their icon inside the tile instead.
+// <games folder>/_art; games without one show their icon inside the tile instead.
 import SwiftUI
 import AppKit
 
@@ -545,7 +545,7 @@ struct SidePanel: View {
 
     private var storage: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("T7 storage", systemImage: "externaldrive.fill").font(.ui(11, .semibold)).foregroundStyle(Theme.ink2)
+            Label("\(SystemInfo.driveName) storage", systemImage: "externaldrive.fill").font(.ui(11, .semibold)).foregroundStyle(Theme.ink2)
             HStack(alignment: .firstTextBaseline) {
                 Text(SystemInfo.t7Free).font(.ui(17, .bold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
                 Spacer()

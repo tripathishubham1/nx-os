@@ -1,6 +1,6 @@
 // NX OS core: the game model, the library scan, saved choices, sound, controller input, cards,
-// the backdrop and the per-game settings panel. Games are the nxnative Mac apps in
-// /Volumes/T7/Games: a folder holding "<name>.app" is a game; a "<name>.app.partial" or a
+// the backdrop and the per-game settings panel. Games are the nxnative Mac apps in the games
+// folder chosen at first launch (Paths): a folder holding "<name>.app" is a game; a "<name>.app.partial" or a
 // "*_build" folder without an app is a build in progress, followed through its log.
 // Settings follow nxnative's docs/frontends.md: the list is the app's dm/launcher.json, choices
 // go to the app's preferences domain as launcher.<env>, and DM_LAUNCHER=0 skips its own window.
@@ -9,7 +9,19 @@ import AppKit
 import GameController
 import CoreImage
 
-let gamesRoot = URL(fileURLWithPath: "/Volumes/T7/Games")
+/// The two folders NX OS works with, chosen on the setup screen and kept in UserDefaults.
+enum Paths {
+    static let gamesKey = "gamesRoot", nxnativeKey = "nxnativeRoot"
+    static var configured: Bool { UserDefaults.standard.string(forKey: gamesKey) != nil }
+    static func url(_ key: String, _ fallback: String) -> URL {
+        URL(fileURLWithPath: UserDefaults.standard.string(forKey: key) ?? (fallback as NSString).expandingTildeInPath)
+    }
+    /// nxnative's build script lives here in a usable checkout.
+    static func isNxnative(_ url: URL) -> Bool {
+        FileManager.default.fileExists(atPath: url.appendingPathComponent("scripts/build_ipa_from_nsp.py").path)
+    }
+}
+var gamesRoot: URL { Paths.url(Paths.gamesKey, "~/Games/NX OS") }
 let env = ProcessInfo.processInfo.environment
 let isSnapshot = env["NXLIB_SNAPSHOT"] != nil
 let spring = Animation.spring(response: 0.45, dampingFraction: 0.82)
@@ -347,7 +359,7 @@ final class Library: ObservableObject {
         }
     }
 
-    /// Deletes the whole game folder on the T7 (app, dumps, build files) and, if asked, its save
+    /// Deletes the whole game folder (app, dumps, build files) and, if asked, its save
     /// data on the Mac. Asks first; refuses while the game runs or builds.
     func delete(_ game: Game, done: @escaping (String) -> Void) {
         guard !running.contains(game.id) else { done("Quit \(game.name) before deleting it."); return }
@@ -360,7 +372,7 @@ final class Library: ObservableObject {
         let a = NSAlert()
         a.alertStyle = .critical
         a.messageText = "Delete \(game.name)?"
-        a.informativeText = "This permanently deletes its folder on the T7: the built app, your dump files and any build files"
+        a.informativeText = "This permanently deletes its folder on \(SystemInfo.driveName): the built app, your dump files and any build files"
             + " (\(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))). It can't be undone."
         let keep = NSButton(checkboxWithTitle: "Also delete its save data on this Mac", target: nil, action: nil)
         keep.state = .off

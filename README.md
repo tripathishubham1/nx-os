@@ -32,7 +32,7 @@ NX OS finds every game nxnative has built, launches it full screen, tracks play 
 - An Apple silicon Mac on macOS 15 or later (the games nxnative builds need macOS 26)
 - Xcode (for `swiftc`)
 - A checkout of nxnative with its Python environment set up
-- Your own `prod.keys` in `~/.switch/prod.keys`, and dumps of games you own
+- Your own `prod.keys`, and dumps of games you own
 
 ## Build
 
@@ -44,16 +44,16 @@ This compiles `Sources/*.swift` with `swiftc`, bundles the resources, signs the 
 
 If you create a code-signing identity called "NX OS Local Signing" in your login keychain, the script signs with it, so macOS keeps the external-drive permission between rebuilds. Without it, the app is signed ad hoc.
 
-## Configuration
+## Setup
 
-The paths are constants at the top of the sources:
+On first launch NX OS asks for two folders:
 
-| Constant | File | Default |
-|---|---|---|
-| `gamesRoot` | `Sources/Core.swift` | `/Volumes/T7/Games` |
-| `nxnativeRoot` | `Sources/Services.swift` | `/Volumes/T7/Projects/Apps/nxnative` |
+- **Games folder**: each game gets its own folder here, next to the dump it was built from. Any drive works.
+- **nxnative**: your clone of [nxnative](https://github.com/seedds/nxnative), set up as its README describes.
 
-Each game lives in its own folder under `gamesRoot`, next to the dump it was built from. Saves stay in `~/Library/Application Support/nxnative`.
+It also looks for your `prod.keys` in `~/.switch/prod.keys` or Ryujinx's `system` folder. You can change the folders later in **System**. Saves stay in `~/Library/Application Support/nxnative`.
+
+![Setup](docs/screenshots/setup.png)
 
 ## Project layout
 
@@ -64,6 +64,7 @@ Sources/
   Shell.swift     window, sidebar, input handling and overlays
   Home.swift      home page and side panel
   Store.swift     store catalog, pages and trailers
+  Setup.swift     first-run folder setup
   Pages.swift     shared components and the library
   Panels.swift    games, builds, stats and system pages
 Resources/        icon, font, avatars, character art, controller art
@@ -74,6 +75,6 @@ Resources/        icon, font, avatars, character art, controller art
 - Font: Plus Jakarta Sans (SIL Open Font License, `Resources/Fonts/OFL.txt`)
 - Avatars: [DiceBear](https://www.dicebear.com) (see `Resources/Avatars/SOURCES.txt`)
 - Controller photo: Crisco 1492, Wikimedia Commons, CC BY 4.0 (`Resources/Art/SOURCES.txt`)
-- Character artwork belongs to Nintendo, The Pokémon Company and Game Freak, and is listed in `Resources/Characters/SOURCES.txt`
+- Character art is not included. Add your own transparent PNGs as `Resources/Characters/<TITLEID>.png` or `<games folder>/_art/<TITLEID>.png`; games without one show their icon.
 
 NX OS is a personal project. It is not affiliated with or endorsed by Nintendo. It does not include or download any games or keys.

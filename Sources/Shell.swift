@@ -29,6 +29,8 @@ struct OSView: View {
     @State private var storeFeatured = 0
     @State private var intro = !isSnapshot && UserDefaults.standard.object(forKey: "introOnStart") as? Bool ?? true
     @State private var flash = 0.0
+    @State private var setup = !Paths.configured || env["NXLIB_SETUP"] == "1"
+    @State private var editingFolders = false
     @State private var muted = Sfx.muted
     @State private var wasBuilding: Set<String> = []
     @AppStorage("fullscreenOnStart") private var fullscreenOnStart = false
@@ -70,7 +72,7 @@ struct OSView: View {
                 delete: { g in
                     library.delete(g) { msg in
                         if selectedID == g.id { selectedID = nil }
-                        show(Toast(title: msg, subtitle: "Space on T7: \(SystemInfo.t7Free)"))
+                        show(Toast(title: msg, subtitle: "Space on \(SystemInfo.driveName): \(SystemInfo.t7Free)"))
                     }
                 })
     }
@@ -78,8 +80,14 @@ struct OSView: View {
     var body: some View {
         ZStack {
             Color.clear
-            if !library.driveMounted {
-                message("externaldrive.badge.xmark", "Connect the T7 drive", "NX OS reads your games from /Volumes/T7/Games")
+            if setup || editingFolders {
+                SetupView(editing: editingFolders) { finishSetup() }.transition(.opacity)
+            } else if !library.driveMounted {
+                VStack(spacing: 22) {
+                    message("externaldrive.badge.xmark", "Can't find your games folder",
+                            "NX OS reads your games from \((gamesRoot.path as NSString).abbreviatingWithTildeInPath). Connect its drive, or choose another folder.")
+                    PillButton(title: "Choose another folder", icon: "folder", prominent: true, tint: mint) { editingFolders = true }
+                }
             } else {
                 frame
             }
@@ -100,6 +108,7 @@ struct OSView: View {
         .focused($focused)
         .onAppear(perform: setUp)
         .onKeyPress(keys: [.leftArrow, .rightArrow, .return, .space, .escape, .tab]) { k in
+            if setup || editingFolders { return .ignored }
             if searchFocused && k.key != .escape { return .ignored }
             switch k.key {
             case .leftArrow: move(-1)
@@ -111,7 +120,7 @@ struct OSView: View {
             return .handled
         }
         .onKeyPress(characters: CharacterSet(charactersIn: "1234567smfMSF/")) { k in
-            if searchFocused { return .ignored }
+            if searchFocused || setup || editingFolders { return .ignored }
             switch k.characters.lowercased() {
             case "s": if let g = current { actions.options(g) }
             case "m": muted.toggle(); Sfx.muted = muted
@@ -179,7 +188,7 @@ struct OSView: View {
         case .games: GamesPage(games: games, library: library, query: query, selectedID: selectedID, actions: actions)
         case .builds: BuildsPage(games: allGames, builds: builds, catalog: catalog, failed: library.failedStart, actions: actions)
         case .stats: StatsPage(games: allGames, library: library)
-        case .system: SystemPage(builds: builds, muted: $muted)
+        case .system: SystemPage(builds: builds, muted: $muted, folders: { editingFolders = true })
         }
     }
 
@@ -297,6 +306,12 @@ struct OSView: View {
     }
 
     // MARK: Behaviour
+
+    private func finishSetup() {
+        withAnimation(spring) { setup = false; editingFolders = false }
+        library.rescan()
+        catalog.load()
+    }
 
     private func setUp() {
         focused = true

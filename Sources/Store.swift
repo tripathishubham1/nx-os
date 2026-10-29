@@ -118,7 +118,7 @@ final class StoreCatalog: ObservableObject {
     }
 }
 
-/// Screenshots are big JPEGs on the T7: decode them off the main thread at the size they're shown.
+/// Screenshots are big JPEGs: decode them off the main thread at the size they're shown.
 final class Thumbs {
     static let shared = Thumbs()
     private let cache = NSCache<NSURL, NSImage>()
@@ -212,7 +212,7 @@ struct StorePage: View {
                     if catalog.games.isEmpty {
                         emptyState(catalog.loaded ? "shippingbox" : "hourglass",
                                    catalog.loaded ? "The game list isn't available" : "Loading the game list…",
-                                   catalog.loaded ? "NX OS reads it from nxnative at \(nxnativeRoot.path). Check the T7 is connected, then refresh." : "")
+                                   catalog.loaded ? "NX OS reads it from nxnative at \(nxnativeRoot.path). Check its drive is connected, then refresh." : "")
                     } else if !query.isEmpty && filtered.isEmpty {
                         emptyState("magnifyingglass", "No games match “\(query)”", "Try a shorter name, or a title ID like 0100…")
                     } else if query.isEmpty && filter != "Featured" {
