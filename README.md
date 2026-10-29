@@ -78,4 +78,6 @@ Resources/        icon, font, avatars, character art, controller art
 - Controller photo: Crisco 1492, Wikimedia Commons, CC BY 4.0 (`Resources/Art/SOURCES.txt`)
 - Character art is not included. Add your own transparent PNGs as `Resources/Characters/<TITLEID>.png` or `<games folder>/_art/<TITLEID>.png`; games without one show their icon.
 
+NX OS is released under the [MIT License](LICENSE). Bundled assets keep their own licences, listed above.
+
 NX OS is a personal project. It is not affiliated with or endorsed by Nintendo. It does not include or download any games or keys.
